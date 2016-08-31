@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:padding="@dimen/list_item_padding">
+
+    <TextView
+        android:layout_width="108dp"
+        android:layout_height="wrap_content"
+        android:textSize="30sp"
+        android:id="@+id/service_number"
+        tools:text="Test"/>
+
+    <TextView
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:gravity="center"
+        android:id="@+id/bus_1_time"
+        tools:text="3"
+        tools:background="@drawable/arrival_bg_empty"/>
+
+    <TextView
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:gravity="center"
+        android:id="@+id/bus_2_time"
+        tools:text="3"
+        tools:background="@drawable/arrival_bg_crowded"/>
+
+    <TextView
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:gravity="center"
+        android:id="@+id/bus_3_time"
+        tools:text="3"
+        tools:background="@drawable/arrival_bg_full"/>
+
+</LinearLayout>
