@@ -10,8 +10,8 @@ import org.json.JSONObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by jeremyy on 8/31/2016.
@@ -22,11 +22,6 @@ public class BusService implements Parcelable {
     public List<Bus> nextBuses;
 
     private static final String LOG_TAG = BusService.class.getSimpleName();
-    private static final String[] nextBusParams = { "NextBus", "SubsequentBus", "SubsequentBus3" };
-    private static final String EMPTY_TEXT = "Seats Available";
-    private static final String CROWDED_TEXT = "Standing Available";
-    private static final String FULL_TEXT = "Limited Standing";
-    private static final SimpleDateFormat parserDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZ");
 
     public BusService() {
         nextBuses = new ArrayList<>();
@@ -63,7 +58,13 @@ public class BusService implements Parcelable {
         }
     };
 
-    public static ArrayList<BusService> fromJson(JSONArray jsonArray) throws JSONException {
+    public static ArrayList<BusService> fromJson(JSONArray jsonArray, long currentMillis) throws JSONException {
+        final String[] nextBusParams = { "NextBus", "SubsequentBus", "SubsequentBus3" };
+        final String EMPTY_TEXT = "Seats Available";
+        final String CROWDED_TEXT = "Standing Available";
+        final String FULL_TEXT = "Limited Standing";
+        final SimpleDateFormat dataMallDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZ", Locale.US);
+
         ArrayList<BusService> results = new ArrayList<>();
         for (int i=0; i<jsonArray.length(); i++) {
             JSONObject jsonBusService = jsonArray.getJSONObject(i);
@@ -75,17 +76,17 @@ public class BusService implements Parcelable {
                 JSONObject jsonBus = jsonBusService.getJSONObject(nextBusParam);
                 Bus bus = new Bus();
 
-                String eta = jsonBus.getString("EstimatedArrival");
-
                 bus.etaMinutes = -1;
 
-                try {
-                    long arrivalMillis = parserDateFormat.parse(eta).getTime();
-                    long currentMillis = Calendar.getInstance().getTime().getTime();
-                    bus.etaMinutes = (int) ((arrivalMillis - currentMillis) / 60000);
-                    if (bus.etaMinutes <= 0) bus.etaMinutes = 0;
-                } catch (ParseException e) {
-                    e.printStackTrace();
+                String eta = jsonBus.getString("EstimatedArrival");
+                if (!eta.equals("")) {
+                    try {
+                        long arrivalMillis = dataMallDateFormat.parse(eta).getTime();
+                        bus.etaMinutes = (int) ((arrivalMillis - currentMillis) / 60000);
+                        if (bus.etaMinutes <= 0) bus.etaMinutes = 0;
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 String busLoadDesc = jsonBus.getString("Load");

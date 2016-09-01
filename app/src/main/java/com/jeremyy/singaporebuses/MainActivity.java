@@ -1,33 +1,40 @@
 package com.jeremyy.singaporebuses;
 
 import android.net.Uri;
-import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
+
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
-    ArrayAdapter<BusService> mAdapter;
+    BusServicesAdapter mAdapter;
     ArrayList<BusService> mBusServices;
 
     @Override
@@ -41,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState != null) {
             mBusServices = savedInstanceState.getParcelableArrayList("busServices");
-            mAdapter.addAll(mBusServices);
+            if (mBusServices != null)
+                mAdapter.addAll(mBusServices);
         }
 
         ListView arrivalList = (ListView) findViewById(R.id.arrival_list);
@@ -51,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new FetchBusArrivalTask().execute(45439);
+                fetchBusArrivalData(45439);
             }
         });
     }
@@ -89,89 +97,95 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public class FetchBusArrivalTask extends AsyncTask<Integer, Void, String> {
+    private void fetchBusArrivalData(int busStopId) {
+        final String BUS_ARRIVAL_BASE_URL = "http://datamall2.mytransport.sg/ltaodataservice/BusArrival";
+        final String ACCEPT_HEADER = "accept";
+        final String ACCOUNT_KEY_HEADER = "AccountKey";
+        final String UNIQUE_USER_ID_HEADER = "UniqueUserID";
+        final String BUS_STOP_ID_PARAM = "BusStopID";
+        final String SST_PARAM = "SST";
+        final String SST = "True";
 
-        @Override
-        protected String doInBackground(Integer... params) {
-            final String LOG_TAG = FetchBusArrivalTask.class.getSimpleName();
-            final String BUS_ARRIVAL_BASE_URL = "http://datamall2.mytransport.sg/ltaodataservice/BusArrival";
-            final String ACCOUNT_KEY = BuildConfig.DATAMALL_ACCOUNT_KEY;
-            final String UNIQUE_USER_ID = BuildConfig.DATAMALL_UNIQUE_USER_ID;
-            final String ACCEPT_HEADER = "accept";
-            final String ACCOUNT_KEY_HEADER = "AccountKey";
-            final String UNIQUE_USER_ID_HEADER = "UniqueUserID";
-            final String BUS_STOP_ID_PARAM = "BusStopID";
-            final String SST_PARAM = "SST";
-            final String SST = "True";
+        Uri builtUri = Uri.parse(BUS_ARRIVAL_BASE_URL).buildUpon()
+                .appendQueryParameter(BUS_STOP_ID_PARAM, String.valueOf(busStopId))
+                .appendQueryParameter(SST_PARAM, SST)
+                .build();
+        String url = builtUri.toString();
 
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
-            String jsonString = null;
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
 
-            try {
-                Uri builtUri = Uri.parse(BUS_ARRIVAL_BASE_URL).buildUpon()
-                        .appendQueryParameter(BUS_STOP_ID_PARAM, params[0].toString())
-                        .appendQueryParameter(SST_PARAM, SST)
-                        .build();
-                URL url = new URL(builtUri.toString());
-
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.addRequestProperty(ACCEPT_HEADER, "application/json");
-                urlConnection.addRequestProperty(ACCOUNT_KEY_HEADER, ACCOUNT_KEY);
-                urlConnection.addRequestProperty(UNIQUE_USER_ID_HEADER, UNIQUE_USER_ID);
-                urlConnection.connect();
-
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                if (inputStream == null) {
-                    // Nothing to do.
-                    return null;
-                }
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    buffer.append(line);
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                jsonString = buffer.toString();
-            } catch (final IOException e) {
-                Log.e(LOG_TAG, "Error ", e);
-                e.printStackTrace();
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (final IOException e) {
-                        Log.e(LOG_TAG, "Error closing stream", e);
-                    }
-                }
+            @Override
+            public void onResponse(JSONObject response) {
+                getNetworkTime(response);
             }
+        }, new Response.ErrorListener() {
 
-            return jsonString;
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(getApplicationContext(), R.string.no_internet_connection, Toast.LENGTH_SHORT).show();
+            }
+        }) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put(ACCEPT_HEADER, "application/json");
+                headers.put(ACCOUNT_KEY_HEADER, BuildConfig.DATAMALL_ACCOUNT_KEY);
+                headers.put(UNIQUE_USER_ID_HEADER, BuildConfig.DATAMALL_UNIQUE_USER_ID);
+                return headers;
+            }
+        };
+
+        MySingleton requestQueue = MySingleton.getInstance(getApplicationContext());
+        requestQueue.addToRequestQueue(request);
+    }
+
+    public void getNetworkTime(final JSONObject jsonData) {
+        final long currentMillis = Calendar.getInstance().getTime().getTime();
+
+        boolean isUsingAutoTime = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            isUsingAutoTime = Settings.Global.getInt(getContentResolver(), Settings.Global.AUTO_TIME, 0) == 1;
         }
 
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
+        if (isUsingAutoTime) {
+            updateBusArrivalList(jsonData, currentMillis);
+        } else {
+            String url = "http://www.timeapi.org/utc/now";
 
-            try {
-                JSONObject jsonResult = new JSONObject(result);
-                JSONArray services = jsonResult.getJSONArray("Services");
-                mBusServices = BusService.fromJson(services);
-                mAdapter.clear();
-                mAdapter.addAll(mBusServices);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+            StringRequest request = new StringRequest(Request.Method.GET, url,
+                    new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            final SimpleDateFormat timeApiDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZ", Locale.US);
+                            try {
+                                long networkMillis = timeApiDateFormat.parse(response).getTime();
+                                updateBusArrivalList(jsonData, networkMillis);
+                            } catch (ParseException e) {
+                                updateBusArrivalList(jsonData, currentMillis);
+                            }
+                        }
+                    },
+                    new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            updateBusArrivalList(jsonData, currentMillis);
+                            error.printStackTrace();
+                        }
+                    });
+
+            MySingleton requestQueue = MySingleton.getInstance(getApplicationContext());
+            requestQueue.addToRequestQueue(request);
+        }
+    }
+
+    private void updateBusArrivalList(JSONObject response, long currentMillis) {
+        try {
+            JSONArray services = response.getJSONArray("Services");
+            mBusServices = BusService.fromJson(services, currentMillis);
+            mAdapter.clear();
+            mAdapter.addAll(mBusServices);
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 }
