@@ -1,4 +1,4 @@
-package com.jeremyy.singaporebuses;
+package io.github.jeremyyap.singaporebuses;
 
 import android.content.Context;
 import android.support.v4.content.res.ResourcesCompat;
@@ -10,18 +10,20 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
+import io.github.jeremyyap.singaporebuses.models.BusServiceEstimate;
+
 /**
  * Created by jeremyy on 8/31/2016.
  */
-public class BusServicesAdapter extends ArrayAdapter<BusService> {
+public class BusServicesAdapter extends ArrayAdapter<BusServiceEstimate> {
 
-    public BusServicesAdapter(Context context, ArrayList<BusService> busServices) {
-        super(context, 0, busServices);
+    public BusServicesAdapter(Context context, ArrayList<BusServiceEstimate> busServiceEstimates) {
+        super(context, 0, busServiceEstimates);
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        BusService busService = getItem(position);
+        BusServiceEstimate busServiceEstimate = getItem(position);
 
         ViewHolder viewHolder;
         if (convertView == null) {
@@ -37,9 +39,9 @@ public class BusServicesAdapter extends ArrayAdapter<BusService> {
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-        viewHolder.serviceNumber.setText(busService.serviceNumber);
+        viewHolder.serviceNumber.setText(busServiceEstimate.serviceNumber);
         for (int i=0; i<3; i++) {
-            int eta = busService.nextBuses.get(i).etaMinutes;
+            int eta = busServiceEstimate.nextBuses.get(i).etaMinutes;
             String etaString = "";
             if (eta > 0) {
                 etaString = String.valueOf(eta);
@@ -48,7 +50,7 @@ public class BusServicesAdapter extends ArrayAdapter<BusService> {
             }
             viewHolder.nextBuses[i].setText(etaString);
             int bgDrawableID = 0;
-            switch (busService.nextBuses.get(i).load) {
+            switch (busServiceEstimate.nextBuses.get(i).load) {
                 case EMPTY:     bgDrawableID = R.drawable.arrival_bg_empty;     break;
                 case CROWDED:   bgDrawableID = R.drawable.arrival_bg_crowded;   break;
                 case FULL:      bgDrawableID = R.drawable.arrival_bg_full;      break;

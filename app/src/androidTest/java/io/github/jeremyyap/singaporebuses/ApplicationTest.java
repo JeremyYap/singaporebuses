@@ -1,4 +1,4 @@
-package com.jeremyy.singaporebuses;
+package io.github.jeremyyap.singaporebuses;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

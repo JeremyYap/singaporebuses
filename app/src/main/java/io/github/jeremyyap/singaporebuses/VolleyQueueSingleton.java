@@ -1,4 +1,4 @@
-package com.jeremyy.singaporebuses;
+package io.github.jeremyyap.singaporebuses;
 
 import android.content.Context;
 
@@ -9,19 +9,19 @@ import com.android.volley.toolbox.Volley;
 /**
  * Created by jeremyy on 9/1/2016.
  */
-public class MySingleton {
-    private static MySingleton mInstance;
+public class VolleyQueueSingleton {
+    private static VolleyQueueSingleton mInstance;
     private RequestQueue mRequestQueue;
     private static Context mCtx;
 
-    private MySingleton(Context context) {
+    private VolleyQueueSingleton(Context context) {
         mCtx = context;
         mRequestQueue = getRequestQueue();
     }
 
-    public static synchronized MySingleton getInstance(Context context) {
+    public static synchronized VolleyQueueSingleton getInstance(Context context) {
         if (mInstance == null) {
-            mInstance = new MySingleton(context);
+            mInstance = new VolleyQueueSingleton(context);
         }
         return mInstance;
     }

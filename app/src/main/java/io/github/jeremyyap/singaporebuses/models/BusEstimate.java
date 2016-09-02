@@ -1,4 +1,4 @@
-package com.jeremyy.singaporebuses;
+package io.github.jeremyyap.singaporebuses.models;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -6,14 +6,14 @@ import android.os.Parcelable;
 /**
  * Created by jeremyy on 8/31/2016.
  */
-public class Bus implements Parcelable {
+public class BusEstimate implements Parcelable {
     public int etaMinutes;
     public Load load;
     public boolean wheelchairAccessible;
 
-    public Bus() {}
+    public BusEstimate() {}
 
-    private Bus(Parcel in) {
+    private BusEstimate(Parcel in) {
         etaMinutes = in.readInt();
         load = (Load) in.readSerializable();
         wheelchairAccessible = in.readByte() == 1;
@@ -31,15 +31,15 @@ public class Bus implements Parcelable {
         dest.writeByte((byte) (wheelchairAccessible ? 1 : 0));
     }
 
-    public static final Creator<Bus> CREATOR = new Creator<Bus>() {
+    public static final Creator<BusEstimate> CREATOR = new Creator<BusEstimate>() {
         @Override
-        public Bus createFromParcel(Parcel in) {
-            return new Bus(in);
+        public BusEstimate createFromParcel(Parcel in) {
+            return new BusEstimate(in);
         }
 
         @Override
-        public Bus[] newArray(int size) {
-            return new Bus[size];
+        public BusEstimate[] newArray(int size) {
+            return new BusEstimate[size];
         }
     };
 
